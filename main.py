@@ -1,5 +1,5 @@
-# importing csv module 
 import csv 
+import matplotlib.pyplot as plt
   
 # csv file name 
 filename = "owid-covid-data.csv"
@@ -47,7 +47,6 @@ for row in rows[us_start: us_end]:
             numeric_val = int(float(val))
         us_data[metric].append(numeric_val)
 
-for metric in us_data.keys():
-    data = us_data[metric]
-    print(metric + ":", end = " ")
-    print(data)
+#construct array of approximate currently active cases
+plt.plot(list(range(len(us_data['total_cases']))),us_data['total_cases'])
+plt.show()
