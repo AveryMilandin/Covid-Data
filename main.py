@@ -1,6 +1,8 @@
 import csv 
 import matplotlib.pyplot as plt
-  
+import numpy as np
+from scipy.signal import savgol_filter
+
 # csv file name 
 filename = "owid-covid-data.csv"
   
@@ -47,6 +49,21 @@ for row in rows[us_start: us_end]:
             numeric_val = int(float(val))
         us_data[metric].append(numeric_val)
 
-#construct array of approximate currently active cases
-plt.plot(list(range(len(us_data['total_cases']))),us_data['total_cases'])
+#approximate currently active cases calculated as sum of all new cases for past 3 weeks
+currentlyActive = []
+#ratio of currently infected that die each day
+deathRatio = []
+newCases = np.array(us_data['new_cases'])
+
+#start 121 days in so that there are enough cases for statistically significant data
+for i in range(121, us_end-us_start):
+    currentlyActive.append(np.sum(newCases[i-21:i]))
+    deathRatio.append(us_data['new_deaths'][i]/currentlyActive[i-121] * 100)
+
+days = list(range(len(deathRatio)))
+deathRatioSmooth = savgol_filter(deathRatio, 51, 2)
+
+plt.plot(days,deathRatio)
+plt.plot(days,deathRatioSmooth)
+plt.ylim([0,0.3])
 plt.show()

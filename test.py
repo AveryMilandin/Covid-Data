@@ -1,5 +1,7 @@
 import csv 
 import matplotlib.pyplot as plt
+from scipy.optimize import curve_fit
+import numpy as np
   
 # csv file name 
 filename = "owid-covid-data.csv"
@@ -47,16 +49,27 @@ for row in rows[us_start: us_end]:
             numeric_val = int(float(val))
         us_data[metric].append(numeric_val)
 
-#construct array of approximate currently active cases
 fig1, ax1 = plt.subplots()
-
-ax1.plot(list(range(len(us_data['new_deaths_smoothed']))),us_data['new_deaths_smoothed'])
-arrow_style = {'arrowstyle': 'simple'}
-quarantine_start = 58
-quarantine_end = 114
-quarantine_resume = 165
+quarantine_start = 79
+quarantine_end = 142
 response_delay = 21
-ax1.annotate(text = "first quarantine", xy = (quarantine_start + response_delay, us_data['new_deaths_smoothed'][quarantine_start + response_delay]), arrowprops = arrow_style)
-ax1.annotate(text = "reopening begins", xy = (quarantine_end + response_delay, us_data['new_deaths_smoothed'][quarantine_end + response_delay]), arrowprops = arrow_style)
-ax1.annotate(text = "reopening reversed", xy = (quarantine_resume + response_delay, us_data['new_deaths_smoothed'][quarantine_resume + response_delay]), arrowprops = arrow_style)
+ax1.plot(list(range(len(us_data['new_deaths_smoothed']))),us_data['new_deaths_smoothed'], label = "Actual Deaths")
+ax1.plot(quarantine_start,us_data['new_deaths_smoothed'][quarantine_start], 'r*')
+ax1.plot(quarantine_end,us_data['new_deaths_smoothed'][quarantine_end], 'r*')
+
+ax1.annotate(text = " Quarantine Starts", xy = (quarantine_start, us_data['new_deaths_smoothed'][quarantine_start]))
+ax1.annotate(text = " Reopening Begins", xy = (quarantine_end, us_data['new_deaths_smoothed'][quarantine_end]))
+
+days = np.array(list(range(quarantine_start + response_delay, quarantine_end + response_delay)))
+deaths = np.array(us_data['new_deaths_smoothed'])[quarantine_start + response_delay:quarantine_end + response_delay]
+def func(x, a, b, c):
+    return a * np.exp(-b * x) + c
+predicted = curve_fit(func,  days - quarantine_start - response_delay,  deaths)
+print(predicted[0])
+days = np.append(days, range(quarantine_end + response_delay + 1, quarantine_end + response_delay + 180), 0)
+ax1.plot(days, predicted[0][0] * np.exp(-predicted[0][1] * (days - quarantine_start - response_delay)) + predicted[0][2], 'm', label="Predicted Deaths w/ Extended Quarantine")
+ax1.legend()
+ax1.set_ylabel("Deaths")
+ax1.set_xlabel("Days Since 1/22/2020")
+plt.title("USA Covid Deaths Per Day")
 plt.show()
